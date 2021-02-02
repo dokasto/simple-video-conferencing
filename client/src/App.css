@@ -1,0 +1,32 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.app-header {
+  text-align: center;
+}
+
+.app-content {
+  flex-grow: 1;
+  display: flex;
+}
+
+.app-footer {
+  text-align: center;
+  height: 200px;
+  padding-top: 10px;
+}
+
+.btn {
+  background-color: #52ac69;
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  font-size: 17px;
+  padding: 10px 30px;
+  border-radius: 8px;
+  cursor: pointer;
+}

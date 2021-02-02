@@ -1,0 +1,16 @@
+.video-container {
+    width: 400px;
+    height: 300px;
+    background-color: #e6e2d6;
+    border-radius: 10px;
+    justify-self: center;
+    display: inline-flex;
+    display: flex;
+}
+
+.video-container video {
+    transform: scale(-1, 1);
+    flex-grow: 1;
+    width: 100%;
+    border-radius: 10px;
+}
