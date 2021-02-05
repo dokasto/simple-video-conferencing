@@ -6,9 +6,15 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/strand.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <memory>
 #include <string>
 #include <thread>
@@ -19,6 +25,8 @@ namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+using ptree = boost::property_tree::ptree;
+using boost::property_tree::write_json;
 
 //------------------------------------------------------------------------------
 
@@ -81,14 +89,41 @@ public:
                         shared_from_this()));
     }
 
-    void
-    on_accept(beast::error_code ec)
-    {
-        if(ec)
-            return fail(ec, "accept");
+    void on_send_message(beast::error_code ec, std::size_t bytes_transferred) {
+        boost::ignore_unused(bytes_transferred);
 
-        // Read a message
+        if (ec) {
+            return fail(ec, "write");
+        }
+
+        // Clear the buffer
+        buffer_.consume(buffer_.size());
+    }
+
+    void send_hello() {
+        boost::uuids::uuid clientId = boost::uuids::random_generator()();
+        ptree response;
+        response.put("id", clientId);
+        response.put("type", "hello");
+        std::ostringstream buf;
+        write_json(buf, response, false);
+        std::string json = buf.str();
+        boost::beast::ostream(buffer_) << json;
+        ws_.async_write(
+                buffer_.data(),
+                beast::bind_front_handler(
+                        &session::on_send_message,
+                        shared_from_this()));
+    }
+
+    void on_accept(beast::error_code ec) {
+        if(ec) {
+            return fail(ec, "accept");
+        }
+
+        // read a message
         do_read();
+        send_hello();
     }
 
     void
