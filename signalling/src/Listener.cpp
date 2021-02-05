@@ -69,8 +69,15 @@ void Listener::on_accept(beast::error_code ec, tcp::socket socket) {
     if (ec) {
         fail(ec, "accept");
     } else {
-        // Create the session and run it
-        std::make_shared<Session>(std::move(socket))->run();
+        boost::uuids::uuid session_id = boost::uuids::random_generator()();
+        sockets.insert(std::make_pair(session_id, std::move(socket)));
+        auto search = sockets.find(session_id);
+
+        if (search != sockets.end()) {
+            // create a session and run it
+            std::shared_ptr<Session> session = std::make_shared<Session>(search->second, session_id, sockets);
+            session->run();
+        }
     }
 
     // Accept another connection

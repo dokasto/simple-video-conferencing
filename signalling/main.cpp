@@ -6,12 +6,13 @@
 #include <boost/asio/strand.hpp>
 #include <algorithm>
 #include <cstdlib>
-#include <iostream>
-#include <sstream>
 #include <memory>
 #include <thread>
 #include <vector>
 #include "src/Listener.h"
+
+namespace beast = boost::beast;
+namespace websocket = beast::websocket;
 
 int main() {
     auto raw_port = "8080";
@@ -36,8 +37,6 @@ int main() {
                     ioc.run();
                 });
     ioc.run();
-
-    std::cout << "Websocket server running :)" << std::endl;
 
     return EXIT_SUCCESS;
 }

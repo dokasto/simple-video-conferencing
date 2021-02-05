@@ -16,6 +16,7 @@
 #include <thread>
 #include <vector>
 #include "src/Session.h"
+#include <map>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -28,6 +29,7 @@ class Listener : public std::enable_shared_from_this<Listener> {
 private:
     net::io_context& ioc_;
     tcp::acceptor acceptor_;
+    std::map<boost::uuids::uuid, websocket::stream<beast::tcp_stream>> sockets;
     void do_accept();
     void on_accept(beast::error_code ec, tcp::socket socket);
 

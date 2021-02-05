@@ -1,5 +1,4 @@
 #include "Session.h"
-
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/dispatch.hpp>
@@ -12,6 +11,7 @@
 #include <sstream>
 #include <memory>
 #include <string>
+#include <map>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -26,7 +26,10 @@ void failure(beast::error_code ec, char const* what) {
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
-Session::Session(tcp::socket&& socket) : ws_(std::move(socket)) {}
+Session::Session(websocket::stream<beast::tcp_stream>& socket,
+                 boost::uuids::uuid& session_id,
+                 std::map<boost::uuids::uuid, websocket::stream<beast::tcp_stream>>& sockets) :
+                 ws_(socket), session_id_(session_id), sockets_(sockets) {}
 
 void Session::run() {
     // We need to be executing within a strand to perform async operations
@@ -70,11 +73,22 @@ void Session::on_send_message(beast::error_code ec, std::size_t bytes_transferre
     buffer_.consume(buffer_.size());
 }
 
+void Session::on_broadcast(beast::error_code ec, std::size_t bytes_transferred) {
+    boost::ignore_unused(bytes_transferred);
+    if (ec) {
+        return failure(ec, "write");
+    }
+    // Clear the buffer
+    broadcast_buffer_.consume(broadcast_buffer_.size());
+}
+
+
 void Session::send_hello() {
-    boost::uuids::uuid clientId = boost::uuids::random_generator()();
     ptree response;
-    response.put("id", clientId);
-    response.put("type", "hello");
+    ptree payload;
+    payload.put("peer_id", session_id_);
+    response.put("event", "CONNECTED");
+    response.add_child("payload", payload);
     std::ostringstream buf;
     write_json(buf, response, false);
     std::string json = buf.str();
@@ -84,6 +98,26 @@ void Session::send_hello() {
             beast::bind_front_handler(
                     &Session::on_send_message,
                     shared_from_this()));
+
+    ptree broadcast;
+    ptree broadcast_payload;
+    broadcast_payload.put("peerId", session_id_);
+    broadcast.put("event", "PEER_CONNECTED");
+    broadcast.add_child("payload", broadcast_payload);
+    std::ostringstream temp_buf;
+    write_json(temp_buf, broadcast, false);
+    std::string broadcast_json = temp_buf.str();
+    boost::beast::ostream(broadcast_buffer_) << broadcast_json;
+
+//    // inform others about this new joiner
+//    for(auto const& [key, val] : sockets_) {
+//        ws_.async_write(
+//                broadcast_buffer_.data(),
+//                beast::bind_front_handler(
+//                        &Session::on_broadcast,
+//                        shared_from_this()));
+//
+//    }
 }
 
 void Session::on_accept(beast::error_code ec) {

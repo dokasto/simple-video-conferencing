@@ -5,6 +5,9 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/strand.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -13,23 +16,28 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <map>
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace websocket = beast::websocket;
+namespace net = boost::asio;
+using tcp = boost::asio::ip::tcp;
 
 class Session : public std::enable_shared_from_this<Session> {
 private:
-    websocket::stream<beast::tcp_stream> ws_;
+    websocket::stream<beast::tcp_stream>& ws_;
     beast::flat_buffer buffer_;
+    beast::flat_buffer broadcast_buffer_;
+    boost::uuids::uuid& session_id_;
+    std::map<boost::uuids::uuid, websocket::stream<beast::tcp_stream>>& sockets_;
 
 public:
-    Session(tcp::socket&& socket);
+    Session(websocket::stream<beast::tcp_stream>& socket, boost::uuids::uuid& session_id, std::map<boost::uuids::uuid, websocket::stream<beast::tcp_stream>>& sockets);
     void run();
     void on_run();
     void on_send_message(beast::error_code ec, std::size_t bytes_transferred);
+    void on_broadcast(beast::error_code ec, std::size_t bytes_transferred);
     void send_hello();
     void on_accept(beast::error_code ec);
     void do_read();

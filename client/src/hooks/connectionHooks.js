@@ -40,18 +40,19 @@ function setupListeners(ws) {
 }
 
 function handleSignalling(data) {
-  switch (data.type) {
-    case "hello":
-      try {
-        const clientId = data.id;
-        console.log("clientid", clientId);
-      } catch (e) {
-        console.log("No client id sent", e);
-      }
-      break;
-    case "iceServers":
-      break;
-  }
+  console.log("server response", data);
+  // switch (data.type) {
+  //   case "hello":
+  //     try {
+  //       const clientId = data.id;
+  //       console.log("clientid", clientId);
+  //     } catch (e) {
+  //       console.log("No client id sent", e);
+  //     }
+  //     break;
+  //   case "iceServers":
+  //     break;
+  // }
 }
 
 export { useConnectToSignallingServer };
