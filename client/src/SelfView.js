@@ -5,7 +5,9 @@ import { useRecoilValue } from "recoil";
 
 function SelfView() {
   const stream = useRecoilValue(localStreamAtom);
-  return <VideoContainer stream={stream} />;
+  const videoStream =
+    stream != null ? new MediaStream(stream.getVideoTracks()) : null;
+  return <VideoContainer stream={videoStream} />;
 }
 
 export default SelfView;
