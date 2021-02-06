@@ -16,6 +16,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <queue>
 #include <map>
 
 namespace beast = boost::beast;
@@ -29,15 +30,19 @@ private:
     websocket::stream<beast::tcp_stream>& ws_;
     beast::flat_buffer buffer_;
     beast::flat_buffer broadcast_buffer_;
-    boost::uuids::uuid& session_id_;
+    boost::uuids::uuid session_id_;
     std::map<boost::uuids::uuid, websocket::stream<beast::tcp_stream>>& sockets_;
+    std::queue<std::reference_wrapper<websocket::stream<beast::tcp_stream>>> session_queue;
+    std::string broadcast_message;
 
 public:
-    Session(websocket::stream<beast::tcp_stream>& socket, boost::uuids::uuid& session_id, std::map<boost::uuids::uuid, websocket::stream<beast::tcp_stream>>& sockets);
+    Session(websocket::stream<beast::tcp_stream>& socket, boost::uuids::uuid session_id, std::map<boost::uuids::uuid, websocket::stream<beast::tcp_stream>>& sockets);
     void run();
     void on_run();
     void on_send_message(beast::error_code ec, std::size_t bytes_transferred);
-    void on_broadcast(beast::error_code ec, std::size_t bytes_transferred);
+    void on_broadcast_new_peer(beast::error_code ec, std::size_t bytes_transferred);
+    void broadcast_helper();
+    void broadcast_new_peer();
     void send_hello();
     void on_accept(beast::error_code ec);
     void do_read();

@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <memory>
+#include <queue>
 #include <string>
 #include <map>
 
@@ -27,7 +28,7 @@ void failure(beast::error_code ec, char const* what) {
 }
 
 Session::Session(websocket::stream<beast::tcp_stream>& socket,
-                 boost::uuids::uuid& session_id,
+                 boost::uuids::uuid session_id,
                  std::map<boost::uuids::uuid, websocket::stream<beast::tcp_stream>>& sockets) :
                  ws_(socket), session_id_(session_id), sockets_(sockets) {}
 
@@ -64,24 +65,15 @@ void Session::on_run() {
                     shared_from_this()));
 }
 
-void Session::on_send_message(beast::error_code ec, std::size_t bytes_transferred) {
-    boost::ignore_unused(bytes_transferred);
+void Session::on_accept(beast::error_code ec) {
     if (ec) {
-        return failure(ec, "write");
+        return failure(ec, "accept");
     }
-    // Clear the buffer
-    buffer_.consume(buffer_.size());
-}
 
-void Session::on_broadcast(beast::error_code ec, std::size_t bytes_transferred) {
-    boost::ignore_unused(bytes_transferred);
-    if (ec) {
-        return failure(ec, "write");
-    }
-    // Clear the buffer
-    broadcast_buffer_.consume(broadcast_buffer_.size());
+    // read a message
+    do_read();
+    send_hello();
 }
-
 
 void Session::send_hello() {
     ptree response;
@@ -98,36 +90,66 @@ void Session::send_hello() {
             beast::bind_front_handler(
                     &Session::on_send_message,
                     shared_from_this()));
-
-    ptree broadcast;
-    ptree broadcast_payload;
-    broadcast_payload.put("peerId", session_id_);
-    broadcast.put("event", "PEER_CONNECTED");
-    broadcast.add_child("payload", broadcast_payload);
-    std::ostringstream temp_buf;
-    write_json(temp_buf, broadcast, false);
-    std::string broadcast_json = temp_buf.str();
-    boost::beast::ostream(broadcast_buffer_) << broadcast_json;
-
-//    // inform others about this new joiner
-//    for(auto const& [key, val] : sockets_) {
-//        ws_.async_write(
-//                broadcast_buffer_.data(),
-//                beast::bind_front_handler(
-//                        &Session::on_broadcast,
-//                        shared_from_this()));
-//
-//    }
 }
 
-void Session::on_accept(beast::error_code ec) {
+void Session::on_send_message(beast::error_code ec, std::size_t bytes_transferred) {
+    boost::ignore_unused(bytes_transferred);
     if (ec) {
-        return failure(ec, "accept");
+        return failure(ec, "write");
+    }
+    // Clear the buffer
+    buffer_.consume(buffer_.size());
+    broadcast_new_peer();
+}
+
+void Session::broadcast_new_peer() {
+    const std::string PEER_ID = "peerId";
+    const std::string EVENT = "event";
+    const std::string PEER_CONNECTED = "PEER_CONNECTED";
+    const std::string PAYLOAD = "payload";
+
+    ptree broadcast;
+    ptree connected_peers;
+    std::ostringstream temp_buf;
+
+    for (auto &peer : sockets_) {
+        auto &peer_session = static_cast<websocket::stream<beast::tcp_stream> &>(peer.second);
+        session_queue.push(peer_session);
+        ptree single_peer;
+        single_peer.put(PEER_ID, peer.first);
+        connected_peers.push_back(ptree::value_type("", single_peer));
     }
 
-    // read a message
-    do_read();
-    send_hello();
+    broadcast.put(EVENT, PEER_CONNECTED);
+    broadcast.add_child(PAYLOAD, connected_peers);
+    write_json(temp_buf, broadcast, false);
+    broadcast_message = temp_buf.str();
+
+    broadcast_helper();
+}
+
+// recursively called to broadcast to all connected peers
+void Session::broadcast_helper() {
+    if (session_queue.empty()) {
+        return;
+    }
+
+    websocket::stream<beast::tcp_stream> &peer_session = session_queue.front();
+    session_queue.pop();
+    boost::beast::ostream(broadcast_buffer_) << broadcast_message;
+    peer_session.async_write(broadcast_buffer_.data(),
+                             beast::bind_front_handler(&Session::on_broadcast_new_peer,
+                                                       shared_from_this()));
+}
+
+void Session::on_broadcast_new_peer(beast::error_code ec, std::size_t bytes_transferred) {
+    boost::ignore_unused(bytes_transferred);
+    if (ec) {
+        return failure(ec, "write");
+    }
+    // Clear the buffer
+    broadcast_buffer_.consume(broadcast_buffer_.size());
+    broadcast_helper();
 }
 
 void Session::do_read() {
