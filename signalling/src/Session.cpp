@@ -22,6 +22,13 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 using ptree = boost::property_tree::ptree;
 using boost::property_tree::write_json;
 
+const std::string PEER_ID = "peerId";
+const std::string EVENT = "event";
+const std::string PEER_CONNECTED = "PEER_CONNECTED";
+const std::string CONNECTED = "CONNECTED";
+const std::string PAYLOAD = "payload";
+const std::string ICE_SERVERS = "iceServers";
+
 // Report a failure
 void failure(beast::error_code ec, char const* what) {
     std::cerr << what << ": " << ec.message() << "\n";
@@ -78,9 +85,18 @@ void Session::on_accept(beast::error_code ec) {
 void Session::send_hello() {
     ptree response;
     ptree payload;
-    payload.put("peer_id", session_id_);
-    response.put("event", "CONNECTED");
-    response.add_child("payload", payload);
+    ptree ice_server;
+    ptree ice_servers;
+
+    ice_server.put("urls", "stun:stun.l.google.com:19302");
+    ice_servers.push_back(ptree::value_type("", ice_server));
+
+    payload.put(PEER_ID, session_id_);
+    payload.add_child(ICE_SERVERS, ice_servers);
+
+    response.put(EVENT, CONNECTED);
+    response.add_child(PAYLOAD, payload);
+
     std::ostringstream buf;
     write_json(buf, response, false);
     std::string json = buf.str();
@@ -103,11 +119,6 @@ void Session::on_send_message(beast::error_code ec, std::size_t bytes_transferre
 }
 
 void Session::broadcast_new_peer() {
-    const std::string PEER_ID = "peerId";
-    const std::string EVENT = "event";
-    const std::string PEER_CONNECTED = "PEER_CONNECTED";
-    const std::string PAYLOAD = "payload";
-
     ptree broadcast;
     ptree connected_peers;
     std::ostringstream temp_buf;

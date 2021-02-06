@@ -35,24 +35,28 @@ function setupListeners(ws) {
     } catch (err) {
       console.log("Received invalid JSON", err, e.data);
     }
-    handleSignalling(data);
+
+    try {
+      handleSignalling(data);
+    } catch (e) {
+      console.log("signal response error", e);
+    }
   });
 }
 
-function handleSignalling(data) {
-  console.log("server response", data);
-  // switch (data.type) {
-  //   case "hello":
-  //     try {
-  //       const clientId = data.id;
-  //       console.log("clientid", clientId);
-  //     } catch (e) {
-  //       console.log("No client id sent", e);
-  //     }
-  //     break;
-  //   case "iceServers":
-  //     break;
-  // }
+function handleSignalling({ event, payload }) {
+  switch (event) {
+    case "CONNECTED":
+      try {
+        const clientId = data.id;
+        console.log("clientid", clientId);
+      } catch (e) {
+        console.log("No client id sent", e);
+      }
+      break;
+    case "iceServers":
+      break;
+  }
 }
 
 export { useConnectToSignallingServer };
