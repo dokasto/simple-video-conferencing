@@ -115,6 +115,7 @@ void Session::on_send_message(beast::error_code ec, std::size_t bytes_transferre
     }
     // Clear the buffer
     buffer_.consume(buffer_.size());
+
     broadcast_new_peer();
 }
 
@@ -184,13 +185,22 @@ void Session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
         failure(ec, "read");
     }
 
+    for (auto &peer : sockets_) {
+        auto &peer_session = static_cast<websocket::stream<beast::tcp_stream> &>(peer.second);
+        session_queue.push(peer_session);
+    }
+
+    broadcast_buffer_ = buffer_;
+
+    broadcast_helper();
+
     // Echo the message
-    ws_.text(ws_.got_text());
-    ws_.async_write(
-            buffer_.data(),
-            beast::bind_front_handler(
-                    &Session::on_write,
-                    shared_from_this()));
+//    ws_.text(ws_.got_text());
+//    ws_.async_write(
+//            buffer_.data(),
+//            beast::bind_front_handler(
+//                    &Session::on_write,
+//                    shared_from_this()));
 }
 
 void Session::on_write(beast::error_code ec, std::size_t bytes_transferred) {
