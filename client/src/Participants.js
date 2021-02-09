@@ -1,17 +1,25 @@
 import "./Participants.css";
 import SelfView from "./SelfView";
-import { peersAtom } from "./atoms/connectionAtom";
+import { peersAtom, peerStreamAtom } from "./atoms/connectionAtom";
 import { useRecoilValue } from "recoil";
 import VideoContainer from "./VideoContainer";
 
 function Participants() {
-  const peers = useRecoilValue(peersAtom);
+  const peersStreams = useRecoilValue(peerStreamAtom);
+  const streams = [];
+
+  peersStreams.forEach((stream) => {
+    if (stream != null) {
+      streams.push(stream);
+    }
+  });
+
   return (
     <div className="participants">
       <SelfView />
-      {/*{peers.map((peer) =>*/}
-      {/*  peer.stream ? <VideoContainer stream={peer.stream} /> : null*/}
-      {/*)}*/}
+      {streams.map((stream, key) => (
+        <VideoContainer key={key} stream={stream} />
+      ))}
     </div>
   );
 }

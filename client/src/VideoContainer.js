@@ -1,14 +1,18 @@
 import "./VideoContainer.css";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 function VideoContainer({ stream }) {
   const videoElem = useRef(null);
-  if (stream != null) {
-    videoElem.current.srcObject = stream;
-  }
+
+  useEffect(() => {
+    if (stream != null && videoElem.current != null) {
+      videoElem.current.srcObject = stream;
+    }
+  }, [stream]);
+
   return (
     <div className="video-container">
-      <video ref={videoElem} autoPlay playsInline></video>
+      <video ref={videoElem} autoPlay playsInline />
     </div>
   );
 }

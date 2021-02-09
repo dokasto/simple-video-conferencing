@@ -5,10 +5,6 @@ const connectionAtom = atom({
   default: {
     ws: null,
     peerId: null,
-    iceServers: [],
-    offers: new Set(),
-    answers: new Set(),
-    candidates: new Set(),
   },
 });
 
@@ -17,4 +13,9 @@ const peersAtom = atom({
   default: new Map(),
 });
 
-export { connectionAtom, peersAtom };
+const peerStreamAtom = atom({
+  key: "peersStreamAtom",
+  default: new Map(),
+});
+
+export { connectionAtom, peersAtom, peerStreamAtom };

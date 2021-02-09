@@ -2,13 +2,19 @@ import "./App.css";
 import Participants from "./Participants";
 import { useEffect } from "react";
 import { useGetLocalStream } from "./hooks/localStreamHooks";
-import { useConnectToSignallingServer } from "./hooks/connectionHooks";
+import { useConnect, useListenForEvents } from "./hooks/signallingHooks";
+import { peersAtom } from "./atoms/connectionAtom";
 
 import React from "react";
+import { useRecoilState } from "recoil";
 
 function Main() {
   const getLocalStream = useGetLocalStream();
-  const connectToSignallingServer = useConnectToSignallingServer();
+  //const listenForEvents = useListenForEvents();
+  const connect = useConnect();
+  const onClick = () => {
+    connect();
+  };
 
   useEffect(() => {
     (async function initialization() {
@@ -25,7 +31,7 @@ function Main() {
         <Participants />
       </div>
       <footer className="app-footer">
-        <button onClick={connectToSignallingServer} className="btn">
+        <button onClick={onClick} className="btn">
           Connect
         </button>
       </footer>

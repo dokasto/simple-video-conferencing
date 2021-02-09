@@ -16,5 +16,4 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(signalling)
 
-add_executable(simple_video_conferencing
-        signalling/main.cpp signalling/src/Session.cpp signalling/src/Session.h signalling/src/Listener.cpp signalling/src/Listener.h)
+add_executable(simple_video_conferencing signalling/main.cpp)
