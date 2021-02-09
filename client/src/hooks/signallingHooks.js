@@ -1,13 +1,10 @@
 import { useCallback } from "react";
-import {
-  connectionAtom,
-  peersAtom,
-  peerStreamAtom,
-} from "../atoms/connectionAtom";
+import { peersAtom, peerStreamAtom } from "../atoms/connectionAtom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { localStreamAtom } from "../atoms/localStreamAtom";
 
-const SOCKET_PROTOCOL = window.location.protocol === "https:" ? "wss" : "ws";
+// const SOCKET_PROTOCOL = window.location.protocol === "https:" ? "wss" : "ws";
+const SOCKET_PROTOCOL = "ws";
 const SOCKET_PORT = "8080";
 const connection = {};
 let localStream;
@@ -19,14 +16,6 @@ export function useConnect() {
     const ws = new WebSocket(
       SOCKET_PROTOCOL + "://" + window.location.hostname + ":" + SOCKET_PORT
     );
-    //
-    // window.addEventListener("beforeunload", function (e) {
-    //   e.returnValue = "";
-    //   console.log("Closing websocket");
-    //   ws.close();
-    //   return null;
-    // });
-
     listenForEvents(ws);
   }, [listenForEvents]);
 }
