@@ -3,7 +3,6 @@ import { peersAtom, peerStreamAtom } from "../atoms/connectionAtom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { localStreamAtom } from "../atoms/localStreamAtom";
 
-// const SOCKET_PROTOCOL = window.location.protocol === "https:" ? "wss" : "ws";
 const SOCKET_PROTOCOL = "ws";
 const SOCKET_PORT = "8080";
 const connection = {};
@@ -16,6 +15,10 @@ export function useConnect() {
     const ws = new WebSocket(
       SOCKET_PROTOCOL + "://" + window.location.hostname + ":" + SOCKET_PORT
     );
+    window.onbeforeunload = function () {
+      ws.onclose = function () {}; // disable onclose handler first
+      ws.close();
+    };
     listenForEvents(ws);
   }, [listenForEvents]);
 }
@@ -57,14 +60,17 @@ function useOnClose() {
 
 function useOnMessage() {
   const messageHandler = useMessageHandler();
-  return useCallback(async (event, ws) => {
-    try {
-      const data = JSON.parse(event.data);
-      await messageHandler(data, ws);
-    } catch (e) {
-      console.error("Invalid JSON message: ", e);
-    }
-  }, []);
+  return useCallback(
+    async (event, ws) => {
+      try {
+        const data = JSON.parse(event.data);
+        await messageHandler(data, ws);
+      } catch (e) {
+        console.error("Invalid JSON message: ", e);
+      }
+    },
+    [messageHandler]
+  );
 }
 
 function useMessageHandler() {
@@ -80,6 +86,7 @@ function useMessageHandler() {
           break;
         case "NEW_PEER":
           onNewPeerConnected(data.payload, ws);
+          break;
         case "OFFER":
           await onOffer(data.payload, ws);
           break;
@@ -89,9 +96,12 @@ function useMessageHandler() {
         case "CANDIDATE":
           await onCandidate(data.payload);
           break;
+        default:
+          console.info("Unhandled event", data);
+          break;
       }
     },
-    [onNewPeerConnected]
+    [onNewPeerConnected, onOffer, onAnswer, onCandidate]
   );
 }
 
@@ -119,7 +129,7 @@ function useOnNewPeerConnected() {
         callPeers(ws);
       }
     },
-    [atomPeers, setPeers]
+    [atomPeers, setPeers, callPeers]
   );
 }
 
@@ -168,7 +178,7 @@ function useOnOffer() {
         );
       }
     },
-    [atomPeers, setPeers]
+    [atomPeers, setPeers, peerStreams, setPeerStreams]
   );
 }
 
@@ -229,47 +239,53 @@ function createPeerConnection(peerId, ws, onTrackAdded) {
 function useCallPeers() {
   const [atomPeers] = useRecoilState(peersAtom);
   const callPeer = useCallPeer();
-  return useCallback((ws) => {
-    atomPeers.forEach((currentPeer, peerId) => {
-      if (peerId !== connection.peerId && !currentPeer.connected) {
-        callPeer(peerId, ws)
-          .then()
-          .catch((e) => {
-            console.error("call error", e);
-          });
-      }
-    });
-  }, []);
+  return useCallback(
+    (ws) => {
+      atomPeers.forEach((currentPeer, peerId) => {
+        if (peerId !== connection.peerId && !currentPeer.connected) {
+          callPeer(peerId, ws)
+            .then()
+            .catch((e) => {
+              console.error("call error", e);
+            });
+        }
+      });
+    },
+    [atomPeers, callPeer]
+  );
 }
 
 function useCallPeer() {
   const [atomPeers, setPeers] = useRecoilState(peersAtom);
   const [peerStreams, setPeerStreams] = useRecoilState(peerStreamAtom);
-  return useCallback(async (peerId, ws) => {
-    const peer = atomPeers.get(peerId);
-    peer.peerConnection = createPeerConnection(peerId, ws, (stream) => {
-      peerStreams.set(peerId, stream);
-      setPeerStreams(peerStreams);
-    });
+  return useCallback(
+    async (peerId, ws) => {
+      const peer = atomPeers.get(peerId);
+      peer.peerConnection = createPeerConnection(peerId, ws, (stream) => {
+        peerStreams.set(peerId, stream);
+        setPeerStreams(peerStreams);
+      });
 
-    if (localStream != null) {
-      localStream
-        .getTracks()
-        .forEach((track) => peer.peerConnection.addTrack(track, localStream));
-    }
+      if (localStream != null) {
+        localStream
+          .getTracks()
+          .forEach((track) => peer.peerConnection.addTrack(track, localStream));
+      }
 
-    const offer = await peer.peerConnection.createOffer();
-    await peer.peerConnection.setLocalDescription(offer);
-    setPeers(atomPeers);
-    ws.send(
-      JSON.stringify({
-        event: "OFFER",
-        payload: {
-          from: connection.peerId,
-          to: peerId,
-          sdp: offer.sdp,
-        },
-      })
-    );
-  }, []);
+      const offer = await peer.peerConnection.createOffer();
+      await peer.peerConnection.setLocalDescription(offer);
+      setPeers(atomPeers);
+      ws.send(
+        JSON.stringify({
+          event: "OFFER",
+          payload: {
+            from: connection.peerId,
+            to: peerId,
+            sdp: offer.sdp,
+          },
+        })
+      );
+    },
+    [atomPeers, setPeers, peerStreams, setPeerStreams]
+  );
 }
