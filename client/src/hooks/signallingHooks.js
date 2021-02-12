@@ -11,16 +11,20 @@ let localStream;
 export function useConnect() {
   localStream = useRecoilValue(localStreamAtom);
   const listenForEvents = useListenForEvents();
+  const onClose = useOnClose();
+
   return useCallback(() => {
     const ws = new WebSocket(
       SOCKET_PROTOCOL + "://" + window.location.hostname + ":" + SOCKET_PORT
     );
     window.onbeforeunload = function () {
-      ws.onclose = function () {}; // disable onclose handler first
-      ws.close();
+      ws.removeEventListener("close", onClose);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
     };
     listenForEvents(ws);
-  }, [listenForEvents]);
+  }, [listenForEvents, onClose]);
 }
 
 export function useListenForEvents() {
@@ -78,6 +82,7 @@ function useMessageHandler() {
   const onOffer = useOnOffer();
   const onAnswer = useOnAnswer();
   const onCandidate = useOnCandidate();
+  const onPeerLeft = useOnPeerLeft();
   return useCallback(
     async (data, ws) => {
       switch (data.event) {
@@ -96,12 +101,15 @@ function useMessageHandler() {
         case "CANDIDATE":
           await onCandidate(data.payload);
           break;
+        case "PEER_LEFT":
+          await onPeerLeft(data.payload);
+          break;
         default:
           console.info("Unhandled event", data);
           break;
       }
     },
-    [onNewPeerConnected, onOffer, onAnswer, onCandidate]
+    [onNewPeerConnected, onOffer, onAnswer, onCandidate, onPeerLeft]
   );
 }
 
@@ -212,6 +220,22 @@ function useOnCandidate() {
       }
     },
     [atomPeers]
+  );
+}
+
+function useOnPeerLeft() {
+  const [atomPeers, setPeers] = useRecoilState(peersAtom);
+  const [peerStreams, setPeerStreams] = useRecoilState(peerStreamAtom);
+  return useCallback(
+    ({ peerId }) => {
+      const newPeerStreams = new Map(peerStreams);
+      const newAtomPeers = new Map(atomPeers);
+      newAtomPeers.delete(peerId);
+      newPeerStreams.delete(peerId);
+      setPeers(newAtomPeers);
+      setPeerStreams(newPeerStreams);
+    },
+    [atomPeers, setPeers, peerStreams, setPeerStreams]
   );
 }
 

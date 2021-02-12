@@ -57,9 +57,28 @@ public:
         response.add_child(PAYLOAD, peers);
 
         std::string json = stringify_ptree(response);
+        broadcast_message(json);
+    }
 
+    void broadcast_peer_left(connection_id peerId) {
+        ptree response;
+        ptree peers;
+        peers.put(PEER_ID, peerId);
+        response.put(EVENT, "PEER_LEFT");
+        response.add_child(PAYLOAD, peers);
+        std::string json = stringify_ptree(response);
+        broadcast_message(json);
+    }
+
+    void broadcast_message(const std::string& message) {
         for(auto it=ws_connections.begin(); it != ws_connections.end(); it++) {
-            ws_server.send(it->second, json, websocketpp::frame::opcode::text);
+            ws_server.send(it->second, message, websocketpp::frame::opcode::text);
+        }
+    }
+
+    void broadcast_message(const server::message_ptr& message) {
+        for(auto it=ws_connections.begin(); it != ws_connections.end(); it++) {
+            ws_server.send(it->second, message);
         }
     }
 
@@ -100,17 +119,16 @@ public:
 
     void on_close(const connection_hdl& handler) {
         for(auto it = ws_connections.begin(); it != ws_connections.end(); it++) {
-            if (!it->second.owner_before(handler) && handler.owner_before(it->second)) {
+            if (!it->second.owner_before(handler) && !handler.owner_before(it->second)) {
                 ws_connections.erase(it);
+                broadcast_peer_left(it->first);
                 break;
             }
         }
     }
 
     void on_message(const connection_hdl& handler, const server::message_ptr& message) {
-        for(auto it = ws_connections.begin(); it != ws_connections.end(); it++) {
-            ws_server.send(it->second, message);
-        }
+        broadcast_message(message);
     }
 
     static std::string stringify_ptree(const ptree& tree) {
@@ -122,13 +140,7 @@ public:
 };
 
 int main() {
-    Broadcast_server server_instance;
     const uint16_t port = 8080;
-    try {
-        server_instance.run(port);
-    } catch(...) {
-        std::cout << "restarting" << std::endl;
-        server_instance.run(port);
-    }
-
+    Broadcast_server server_instance;
+    server_instance.run(port);
 }
