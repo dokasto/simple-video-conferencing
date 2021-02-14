@@ -42,7 +42,7 @@ public:
         ws_server.set_reuse_addr(true);
     }
 
-    void broadcast_peers_list() {
+    void broadcast_peers_list(connection_id excluded_peer_id) {
         ptree peers;
         ptree response;
         std::ostringstream message_buffer;
@@ -57,7 +57,12 @@ public:
         response.add_child(PAYLOAD, peers);
 
         std::string json = stringify_ptree(response);
-        broadcast_message(json);
+
+        for(auto it=ws_connections.begin(); it != ws_connections.end(); it++) {
+            if (it->first != excluded_peer_id) {
+                ws_server.send(it->second, json, websocketpp::frame::opcode::text);
+            }
+        }
     }
 
     void broadcast_peer_left(connection_id peerId) {
@@ -72,7 +77,7 @@ public:
 
     void broadcast_message(const std::string& message) {
         for(auto it=ws_connections.begin(); it != ws_connections.end(); it++) {
-            ws_server.send(it->second, message, websocketpp::frame::opcode::text);
+                ws_server.send(it->second, message, websocketpp::frame::opcode::text);
         }
     }
 
@@ -88,21 +93,16 @@ public:
         ptree ice_server;
         ptree ice_servers;
 
-        bool isInitialPeer = ws_connections.size() == 1;
-
         ice_server.put("urls", "stun:stun.l.google.com:19302");
         ice_servers.push_back(ptree::value_type("", ice_server));
         payload.put(PEER_ID, id);
         payload.add_child("iceServers", ice_servers);
-        payload.put("isInitialPeer", isInitialPeer);
         response.put(EVENT, "CONNECTED");
         response.add_child(PAYLOAD, payload);
 
         std::string json = stringify_ptree(response);
 
         ws_server.send(handler, json, websocketpp::frame::opcode::text);
-
-        broadcast_peers_list();
     }
 
     void run(uint16_t port) {
@@ -115,6 +115,7 @@ public:
         connection_id id = boost::uuids::random_generator()();
         ws_connections.insert(std::make_pair(id, handler));
         send_connect_message(id, handler);
+        broadcast_peers_list(id);
     }
 
     void on_close(const connection_hdl& handler) {

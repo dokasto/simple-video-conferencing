@@ -1,21 +1,22 @@
 import { atom } from "recoil";
 
-const connectionAtom = atom({
-  key: "connectionAtom",
-  default: {
-    ws: null,
-    peerId: null,
-  },
-});
-
-const peersAtom = atom({
-  key: "peersAtom",
+const peerConnectionsAtom = atom({
+  key: "peerConnections",
   default: new Map(),
 });
 
-const peerStreamAtom = atom({
+const peerStreamsAtom = atom({
   key: "peersStreamAtom",
   default: new Map(),
 });
 
-export { connectionAtom, peersAtom, peerStreamAtom };
+const connectionAtom = atom({
+  key: "connectionAtom",
+  default: {
+    peerId: null,
+    iceServers: null,
+    ws: null,
+  },
+});
+
+export { connectionAtom, peerConnectionsAtom, peerStreamsAtom };

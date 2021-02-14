@@ -1,11 +1,11 @@
 import "./Participants.css";
 import SelfView from "./SelfView";
-import { peerStreamAtom } from "./atoms/connectionAtom";
+import { peerStreamsAtom } from "./atoms/connectionAtom";
 import { useRecoilValue } from "recoil";
 import VideoContainer from "./VideoContainer";
 
 function Participants() {
-  const peersStreams = useRecoilValue(peerStreamAtom);
+  const peersStreams = useRecoilValue(peerStreamsAtom);
   return (
     <div className="participants">
       <SelfView />

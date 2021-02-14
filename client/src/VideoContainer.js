@@ -6,6 +6,9 @@ function VideoContainer({ stream }) {
 
   useEffect(() => {
     if (stream != null && videoElem.current != null) {
+      videoElem.current.onloadedmetadata = () => {
+        videoElem.current.play();
+      };
       videoElem.current.srcObject = stream;
     }
   }, [stream]);
