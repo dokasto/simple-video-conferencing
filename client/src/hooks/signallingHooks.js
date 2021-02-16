@@ -1,10 +1,12 @@
+// @flow
 import {
   peerConnectionsAtom,
   peerStreamsAtom,
   connectionAtom,
 } from "../atoms/connectionAtom";
-import { useRecoilCallback } from "recoil";
+import { useRecoilCallback, useRecoilValue } from "recoil";
 import { localStreamAtom } from "../atoms/localStreamAtom";
+import { useState, useEffect } from "react";
 
 const SOCKET_PROTOCOL = "ws";
 const SOCKET_PORT = "8080";
@@ -23,6 +25,21 @@ export function useConnect() {
     },
     [listenForEvents]
   );
+}
+
+export function useIsConnected(): boolean {
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const connection = useRecoilValue(connectionAtom);
+
+  useEffect(() => {
+    setIsConnected(
+      connection.ws != null &&
+        connection.peerId != null &&
+        connection.iceServers != null
+    );
+  }, [connection]);
+
+  return isConnected;
 }
 
 export function useListenForEvents() {
@@ -327,6 +344,19 @@ function useOnPeerLeft() {
       await disconnectPeer(peerId);
     },
     [disconnectPeer]
+  );
+}
+
+export function useDisconnect() {
+  return useRecoilCallback(
+    ({ set, snapshot }) => async () => {
+      const connection = await snapshot.getPromise(connectionAtom);
+      connection.ws.close();
+      set(peerConnectionsAtom, new Map());
+      set(peerStreamsAtom, new Map());
+      set(connectionAtom, { peerId: null, ws: null, iceServers: null });
+    },
+    []
   );
 }
 

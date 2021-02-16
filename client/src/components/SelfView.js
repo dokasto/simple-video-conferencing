@@ -1,6 +1,6 @@
 import React from "react";
 import VideoContainer from "./VideoContainer";
-import { localStreamAtom } from "./atoms/localStreamAtom";
+import { localStreamAtom } from "../atoms/localStreamAtom";
 import { useRecoilValue } from "recoil";
 
 function SelfView() {

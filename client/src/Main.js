@@ -1,20 +1,19 @@
 import "./App.css";
-import Participants from "./Participants";
+import Participants from "./components/Participants";
 import { useEffect } from "react";
-import { useGetLocalStream } from "./hooks/localStreamHooks";
-import { useConnect } from "./hooks/signallingHooks";
+import { useGetLocalStream } from "hooks/localStreamHooks";
+import ConnectButton from "components/ConnectButton";
 
 import React from "react";
 
 function Main() {
   const getLocalStream = useGetLocalStream();
-  const connect = useConnect();
 
   useEffect(() => {
     (async function initialization() {
       await getLocalStream();
     })();
-  }, []);
+  }, [getLocalStream]);
 
   return (
     <div className="app">
@@ -25,9 +24,7 @@ function Main() {
         <Participants />
       </div>
       <footer className="app-footer">
-        <button onClick={connect} className="btn">
-          Connect
-        </button>
+        <ConnectButton />
       </footer>
     </div>
   );

@@ -19,14 +19,3 @@
   height: 200px;
   padding-top: 10px;
 }
-
-.btn {
-  background-color: #52ac69;
-  color: #fff;
-  font-weight: 700;
-  border: none;
-  font-size: 17px;
-  padding: 10px 30px;
-  border-radius: 8px;
-  cursor: pointer;
-}
