@@ -1,2 +1,2 @@
-# simple-video-conferencing
+# Simple Video Conferencing
 A simple video conferencing app
