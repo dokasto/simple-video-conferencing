@@ -13,9 +13,3 @@
   flex-grow: 1;
   display: flex;
 }
-
-.app-footer {
-  text-align: center;
-  height: 200px;
-  padding-top: 10px;
-}

@@ -3,11 +3,15 @@ import Participants from "./components/Participants";
 import { useEffect } from "react";
 import { useGetLocalStream } from "hooks/localStreamHooks";
 import ConnectButton from "components/ConnectButton";
+import MuteButton from "components/MuteButton";
 
 import React from "react";
+import { css, StyleSheet } from "aphrodite";
+import { useIsConnected } from "./hooks/signallingHooks";
 
 function Main() {
   const getLocalStream = useGetLocalStream();
+  const isConnected = useIsConnected();
 
   useEffect(() => {
     (async function initialization() {
@@ -23,11 +27,20 @@ function Main() {
       <div className="app-content">
         <Participants />
       </div>
-      <footer className="app-footer">
+      <footer className={css(styles.footer)}>
+        {isConnected && <MuteButton />}
         <ConnectButton />
       </footer>
     </div>
   );
 }
+
+const styles = StyleSheet.create({
+  footer: {
+    display: "flex",
+    margin: "100px auto",
+    justifyContent: "space-between",
+  },
+});
 
 export default Main;

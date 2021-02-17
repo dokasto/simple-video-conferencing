@@ -5,6 +5,9 @@ import {
   useDisconnect,
 } from "hooks/signallingHooks";
 import { StyleSheet, css } from "aphrodite";
+import Icon from "@mdi/react";
+import { mdiPhone } from "@mdi/js";
+import { mdiCloseThick } from "@mdi/js";
 
 function ConnectButton(): React.Node {
   const connect = useConnect();
@@ -27,20 +30,30 @@ function ConnectButton(): React.Node {
         isConnected ? styles.disconnected : styles.connected
       )}
     >
-      {isConnected ? "disconnect" : "connect"}
+      <Icon
+        path={isConnected ? mdiCloseThick : mdiPhone}
+        title={isConnected ? "disconnect" : "connect"}
+        size={1}
+        color="#fff"
+      />
     </button>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     color: "#fff",
     fontWeight: "700",
     border: "none",
     fontSize: "17px",
-    padding: "10px 30px",
-    borderRadius: "8px",
+    borderRadius: "50%",
     cursor: "pointer",
+    width: 50,
+    height: 50,
+    margin: "0 10px",
   },
   connected: {
     backgroundColor: "#27ae60",
