@@ -6,8 +6,7 @@ import {
 } from "hooks/signallingHooks";
 import { StyleSheet, css } from "aphrodite";
 import Icon from "@mdi/react";
-import { mdiPhone } from "@mdi/js";
-import { mdiCloseThick } from "@mdi/js";
+import { mdiPhone, mdiCloseThick } from "@mdi/js";
 
 function ConnectButton(): React.Node {
   const connect = useConnect();

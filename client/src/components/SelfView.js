@@ -7,7 +7,8 @@ function SelfView() {
   const stream = useRecoilValue(localStreamAtom);
   const videoStream =
     stream != null ? new MediaStream(stream.getVideoTracks()) : null;
-  return <VideoContainer stream={videoStream} />;
+  const peer = { stream: videoStream, videoMuted: false, audioMuted: false };
+  return <VideoContainer peer={peer} />;
 }
 
 export default SelfView;
