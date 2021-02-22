@@ -47,7 +47,7 @@ export function useToggleAudio() {
     const [audioTrack] = localStream?.getAudioTracks();
     if (audioTrack != null) {
       audioTrack.enabled = !isMuted;
-      ws.send(
+      ws?.send(
         JSON.stringify({
           event: "TOGGLE_AUDIO",
           payload: { peerId, isMuted },
