@@ -1,19 +1,14 @@
 // @flow
 import { css, StyleSheet } from "aphrodite";
-import { mdiVolumeHigh, mdiVolumeVariantOff } from "@mdi/js";
+import { mdiVideo, mdiVideoOff } from "@mdi/js";
 import Icon from "@mdi/react";
-import { useToggleMute } from "hooks/localStreamHooks";
+import { useToggleVideo } from "../hooks/localStreamHooks";
 
-function MuteButton(): React.Node {
-  const [isMuted, toggleMute] = useToggleMute();
+function ToggleVideoButton(): React.Node {
+  const [isEnabled, toggleVideo] = useToggleVideo();
   return (
-    <button onClick={toggleMute} className={css(styles.root)}>
-      <Icon
-        path={isMuted ? mdiVolumeVariantOff : mdiVolumeHigh}
-        title={isMuted ? "Unmute" : "Mute"}
-        size={1}
-        color="#fff"
-      />
+    <button onClick={toggleVideo} className={css(styles.root)}>
+      <Icon path={isEnabled ? mdiVideo : mdiVideoOff} size={1} color="#fff" />
     </button>
   );
 }
@@ -36,4 +31,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MuteButton;
+export default ToggleVideoButton;

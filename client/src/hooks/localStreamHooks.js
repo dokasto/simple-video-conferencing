@@ -15,7 +15,30 @@ export function useGetLocalStream() {
   }, [setLocalStream]);
 }
 
-export function useToggleMute() {
+export function useToggleVideo() {
+  const localStream = useRecoilValue(localStreamAtom);
+  const [isEnabled, setIsEnabled] = useState<boolean>(true);
+  const { ws, peerId } = useRecoilValue(connectionAtom);
+
+  const toggle = useCallback(() => {
+    const [videoTrack] = localStream?.getVideoTracks();
+    if (videoTrack == null) {
+      return;
+    }
+    videoTrack.enabled = !isEnabled;
+    setIsEnabled(!isEnabled);
+    ws?.send(
+      JSON.stringify({
+        event: "TOGGLE_VIDEO",
+        payload: { peerId, isEnabled },
+      })
+    );
+  }, [localStream, peerId, ws, isEnabled]);
+
+  return [isEnabled, toggle];
+}
+
+export function useToggleAudio() {
   const localStream = useRecoilValue(localStreamAtom);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const { ws, peerId } = useRecoilValue(connectionAtom);
@@ -31,11 +54,11 @@ export function useToggleMute() {
         })
       );
     }
-  }, [localStream, isMuted]);
+  }, [localStream, isMuted, peerId, ws]);
 
   const toggle = useCallback(() => {
     setIsMuted(!isMuted);
-  });
+  }, [isMuted]);
 
   return [isMuted, toggle];
 }

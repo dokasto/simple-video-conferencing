@@ -121,6 +121,7 @@ function useMessageHandler() {
   const onPeerLeft = useOnPeerLeft();
   const onConnected = useOnConnect();
   const onToggleAudio = useOnToggleAudio();
+  const onToggleVideo = useOnToggleVideo();
 
   return useRecoilCallback(
     () => async ({ event, payload }) => {
@@ -146,6 +147,9 @@ function useMessageHandler() {
         case "TOGGLE_AUDIO":
           await onToggleAudio(payload);
           break;
+        case "TOGGLE_VIDEO":
+          await onToggleVideo(payload);
+          break;
         default:
           console.info("Unhandled event", event, payload);
           break;
@@ -158,6 +162,8 @@ function useMessageHandler() {
       onCandidate,
       onPeerLeft,
       onConnected,
+      onToggleVideo,
+      onToggleAudio,
     ]
   );
 }
@@ -168,6 +174,22 @@ function useOnConnect() {
       const connection = await snapshot.getPromise(connectionAtom);
       const newConnection = { ...connection, peerId, iceServers };
       set(connectionAtom, newConnection);
+    },
+    []
+  );
+}
+
+function useOnToggleVideo() {
+  return useRecoilCallback(
+    ({ set, snapshot }) => async ({ peerId, isEnabled }) => {
+      const peerStreams = await snapshot.getPromise(peerStreamsAtom);
+      if (peerStreams.has(peerId)) {
+        const peer = peerStreams.get(peerId);
+        peer.videoEnabled = isEnabled;
+        const newPeerStream = new Map([...peerStreams]);
+        newPeerStream.set(peerId, peer);
+        set(peerStreamsAtom, newPeerStream);
+      }
     },
     []
   );

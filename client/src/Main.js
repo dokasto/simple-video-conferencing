@@ -3,7 +3,8 @@ import Participants from "./components/Participants";
 import { useEffect } from "react";
 import { useGetLocalStream } from "hooks/localStreamHooks";
 import ConnectButton from "components/ConnectButton";
-import MuteButton from "components/MuteButton";
+import ToggleAudioButton from "components/ToggleAudioButton";
+import ToggleVideoButton from "components/ToggleVideoButton";
 
 import React from "react";
 import { css, StyleSheet } from "aphrodite";
@@ -28,7 +29,8 @@ function Main() {
         <Participants />
       </div>
       <footer className={css(styles.footer)}>
-        {isConnected && <MuteButton />}
+        <ToggleVideoButton />
+        {isConnected && <ToggleAudioButton />}
         <ConnectButton />
       </footer>
     </div>
