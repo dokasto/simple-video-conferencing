@@ -5,6 +5,7 @@ import { useGetLocalStream } from "hooks/localStreamHooks";
 import ConnectButton from "components/ConnectButton";
 import ToggleAudioButton from "components/ToggleAudioButton";
 import ToggleVideoButton from "components/ToggleVideoButton";
+import ToggleScreenShareButton from "components/ToggleScreenShareButton";
 
 import React from "react";
 import { css, StyleSheet } from "aphrodite";
@@ -29,6 +30,7 @@ function Main() {
         <Participants />
       </div>
       <footer className={css(styles.footer)}>
+        {isConnected && <ToggleScreenShareButton />}
         <ToggleVideoButton />
         {isConnected && <ToggleAudioButton />}
         <ConnectButton />

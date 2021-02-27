@@ -1,8 +1,57 @@
 //@flow
-import { useRecoilState, useRecoilValue } from "recoil";
-import { localStreamAtom } from "../atoms/localStreamAtom";
+import { useRecoilCallback, useRecoilState, useRecoilValue } from "recoil";
+import { localStreamAtom } from "atoms/localStreamAtom";
 import { useCallback, useState, useEffect } from "react";
-import { connectionAtom } from "../atoms/connectionAtom";
+import { connectionAtom, peerConnectionsAtom } from "atoms/connectionAtom";
+
+export function useIsScreenSharing() {
+  const localStream = useRecoilValue(localStreamAtom);
+  return useCallback(() => {
+    if (localStream == null) {
+      return;
+    }
+    const [videoTrack] = localStream.getVideoTracks();
+    return videoTrack?.label.toLocaleLowerCase().includes("screen") ?? false;
+  }, [localStream]);
+}
+
+export function useReplaceVideo() {
+  return useRecoilCallback(({ set, snapshot }) => async (stream) => {
+    const peerConnections = await snapshot.getPromise(peerConnectionsAtom);
+    peerConnections.forEach((pc) => {
+      const sender = pc.getSenders().find((s) => s?.track.kind === "video");
+      sender?.replaceTrack(stream?.getVideoTracks()[0]);
+    });
+    set(localStreamAtom, stream);
+  });
+}
+
+export function useStopScreenShare() {
+  const replaceVideo = useReplaceVideo();
+  return useRecoilCallback(({ set }) => async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      await replaceVideo(stream);
+    } catch (e) {
+      console.error("stop screen share", e);
+    }
+  });
+}
+
+export function useStartScreenShare() {
+  const replaceVideo = useReplaceVideo();
+  return useRecoilCallback(({ set, snapshot }) => async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia();
+      await replaceVideo(stream);
+    } catch (e) {
+      console.error("Screen share", e);
+    }
+  });
+}
 
 export function useGetLocalStream() {
   const [, setLocalStream] = useRecoilState(localStreamAtom);

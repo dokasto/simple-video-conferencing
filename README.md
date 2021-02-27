@@ -6,6 +6,6 @@ Feature List
 - [x] React/Javascript App client
 - [x] Audio mute/unmute
 - [x] Video enable/disable
-- [ ] screen sharing
+- [x] screen sharing
 - [ ] Selective Forwarding Unit(SFU) / Media server with C++ and GStreamer
 - [ ] Deployment to the cloud
