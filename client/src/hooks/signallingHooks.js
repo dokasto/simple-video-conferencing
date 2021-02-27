@@ -232,27 +232,16 @@ function useOnNewPeerConnected() {
 
 function useCallPeer() {
   const createPeerConnection = useCreatePeerConnection();
+  const onStreamAdded = useOnStreamAdded();
   return useRecoilCallback(
     ({ set, snapshot }) => async (peerId) => {
       let newPeerConnections;
       const connection = await snapshot.getPromise(connectionAtom);
       const peerConnections = await snapshot.getPromise(peerConnectionsAtom);
       const localStream = await snapshot.getPromise(localStreamAtom);
-
-      const tempPeerStreams = new Map();
-
-      const onTrackAdded = ({ track }) => {
-        const peer = tempPeerStreams.has(peerId)
-          ? tempPeerStreams.get(peerId)
-          : { stream: new MediaStream(), mutedAudio: false, mutedVideo: false };
-        peer.stream.addTrack(track);
-        tempPeerStreams.set(peerId, peer);
-        set(peerStreamsAtom, tempPeerStreams);
-      };
-
       const peerConnection = await createPeerConnection({
         peerId,
-        onTrackAdded,
+        onStreamAdded,
       });
 
       newPeerConnections = new Map([...peerConnections]);
@@ -260,9 +249,7 @@ function useCallPeer() {
       set(peerConnectionsAtom, newPeerConnections);
 
       if (localStream != null) {
-        localStream
-          .getTracks()
-          .forEach((track) => peerConnection.addTrack(track, localStream));
+        peerConnection.addStream(localStream);
       }
 
       const offer = await peerConnection.createOffer();
@@ -287,8 +274,22 @@ function useCallPeer() {
   );
 }
 
+function useOnStreamAdded() {
+  return useRecoilCallback(
+    ({ set, snapshot }) => async (peerId, stream) => {
+      const peerStreams = await snapshot.getPromise(peerStreamsAtom);
+      const peer = { stream, mutedAudio: false, mutedVideo: false };
+      const newPeerStreams = new Map([...peerStreams]);
+      newPeerStreams.set(peerId, peer);
+      set(peerStreamsAtom, newPeerStreams);
+    },
+    []
+  );
+}
+
 function useOnOffer() {
   const createPeerConnection = useCreatePeerConnection();
+  const onStreamAdded = useOnStreamAdded();
   return useRecoilCallback(
     ({ set, snapshot }) => async ({ from, to, sdp }) => {
       const localStream = await snapshot.getPromise(localStreamAtom);
@@ -299,26 +300,13 @@ function useOnOffer() {
         return;
       }
 
-      const tempPeerStreams = new Map();
-
-      const onTrackAdded = ({ track }) => {
-        const peer = tempPeerStreams.has(from)
-          ? tempPeerStreams.get(from)
-          : { stream: new MediaStream(), mutedAudio: false, mutedVideo: false };
-        peer.stream.addTrack(track);
-        tempPeerStreams.set(from, peer);
-        set(peerStreamsAtom, tempPeerStreams);
-      };
-
       const peerConnection = await createPeerConnection({
         peerId: from,
-        onTrackAdded,
+        onStreamAdded,
       });
 
       if (localStream != null) {
-        localStream
-          .getTracks()
-          .forEach((track) => peerConnection.addTrack(track, localStream));
+        peerConnection.addStream(localStream);
       }
 
       await peerConnection.setRemoteDescription({
@@ -344,7 +332,7 @@ function useOnOffer() {
         })
       );
     },
-    [createPeerConnection]
+    [createPeerConnection, onStreamAdded]
   );
 }
 
@@ -431,7 +419,7 @@ function useDisconnectPeer() {
 
 function useCreatePeerConnection() {
   return useRecoilCallback(
-    ({ snapshot }) => async ({ peerId, onTrackAdded }) => {
+    ({ snapshot }) => async ({ peerId, onStreamAdded }) => {
       const connection = await snapshot.getPromise(connectionAtom);
       const pc = new RTCPeerConnection({ iceServers: connection.iceServers });
       pc.addEventListener("icecandidate", (e) => {
@@ -446,7 +434,11 @@ function useCreatePeerConnection() {
           })
         );
       });
-      pc.addEventListener("track", onTrackAdded);
+
+      if (onStreamAdded != null) {
+        pc.onaddstream = ({ stream }) => onStreamAdded(peerId, stream).then();
+      }
+
       return pc;
     }
   );

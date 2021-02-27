@@ -6,6 +6,7 @@ import { css, StyleSheet } from "aphrodite";
 
 function Participants() {
   const peersStreams = useRecoilValue(peerStreamsAtom);
+  //console.log("peersStreams", peersStreams);
   return (
     <div className={css(styles.root)}>
       <SelfView />
