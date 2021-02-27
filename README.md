@@ -7,5 +7,8 @@ Feature List
 - [x] Audio mute/unmute
 - [x] Video enable/disable
 - [x] screen sharing
-- [ ] Selective Forwarding Unit(SFU) / Media server with C++ and GStreamer
-- [ ] Deployment to the cloud
+
+## Steps to run app
+- Build and run the signalling server in `/signalling` 
+- Start the client `cd client && yarn install && yarn start`
+
