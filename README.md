@@ -1,5 +1,5 @@
 # Simple Video Conferencing
-A simple video conferencing app
+A simple video conferencing application. Uses Google's STUN server and Mesh architecture.
 
 Feature List
 - [x] C++ signalling server
