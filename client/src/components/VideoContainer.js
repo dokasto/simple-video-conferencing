@@ -3,8 +3,9 @@ import { useRef, useEffect } from "react";
 import { css, StyleSheet } from "aphrodite";
 import Icon from "@mdi/react";
 import { mdiVideoOff, mdiVolumeVariantOff } from "@mdi/js";
+import AudioVisualisation from "components/AudioVisualisation";
 
-function VideoContainer({ peer }) {
+function VideoContainer({ peer, selfView = false }) {
   const videoElem = useRef(null);
   const { stream, mutedAudio, videoEnabled } = peer;
 
@@ -18,7 +19,7 @@ function VideoContainer({ peer }) {
   }, [stream]);
 
   return (
-    <div className={css(styles.root)}>
+    <div className={css(selfView ? styles.rootSelfView : styles.root)}>
       <video
         className={css(styles.video)}
         ref={videoElem}
@@ -37,11 +38,23 @@ function VideoContainer({ peer }) {
           <Icon className={css(styles.icon)} path={mdiVideoOff} color="#FFF" />
         )}
       </div>
+      {stream && stream.getAudioTracks().length > 0 && (
+        <AudioVisualisation stream={stream} />
+      )}
     </div>
   );
 }
 
 const styles = StyleSheet.create({
+  rootSelfView: {
+    width: "300px",
+    height: "230px",
+    border: "5px solid #fff",
+    borderRadius: "10px",
+    justifySelf: "center",
+    display: "inline-flex",
+    position: "relative",
+  },
   root: {
     width: "400px",
     height: "300px",
