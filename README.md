@@ -8,7 +8,11 @@ Feature List
 - [x] Video enable/disable
 - [x] screen sharing
 
-## Steps to run app
-- Build and run the signalling server in `/signalling` 
-- Start the client `cd client && yarn install && yarn start`
+## Development
+### Build and run the signalling server in
+- `cd signalling/lib && git clone https://github.com/zaphoyd/websocketpp`
+- `cd websocketpp && cmake . && make install`
+  
+### Build and run the client
+- `cd client && yarn install && yarn start`
 
