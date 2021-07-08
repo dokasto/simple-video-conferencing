@@ -21,7 +21,7 @@ export default function AudioVisualisation({ stream }) {
     });
 
     function updateMeter() {
-      setMeter(soundMeter.current.instant.toFixed(2));
+      setMeter(soundMeter.current?.instant.toFixed(2));
       window.requestAnimationFrame(updateMeter);
     }
 
